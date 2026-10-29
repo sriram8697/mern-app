@@ -1,6 +1,7 @@
  require('dotenv').config();
 
 const crypto = require('node:crypto');
+const path = require('node:path');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -385,9 +386,20 @@ app.get('/api/admin/logs', requireAuth, requireAdmin, async (_req, res) => {
   }
 });
 
-app.get('/', (_req, res) => res.send('Savor backend is running.'));
-
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api', (_req, res) => res.status(404).json({ message: 'API route not found.' }));
+
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.resolve(__dirname, '../client/dist');
+  app.use(express.static(clientBuildPath));
+  app.get(/.*/, (_req, res, next) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'), (error) => {
+      if (error) next(error);
+    });
+  });
+} else {
+  app.get('/', (_req, res) => res.send('Savor backend is running.'));
+}
 
 app.listen(port, () => {
   console.log(`Backend running at http://localhost:${port}`);
