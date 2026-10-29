@@ -1,0 +1,215 @@
+SAVOR RECIPE FINDER - PROJECT GUIDE
+===================================
+
+OVERVIEW
+--------
+Savor is a full-stack recipe finder built with React, Express, and MongoDB.
+Visitors can browse and search recipes, save favorites, create accounts, and
+submit recipes for admin review. Admins can manage users and recipes.
+
+TECHNOLOGY
+----------
+Frontend: React 19, Vite, JavaScript, CSS
+Backend:  Node.js, Express 5
+Database: MongoDB with Mongoose
+Linting:  Oxlint
+Hosting:  Render Blueprint configuration is provided in render.yaml
+
+PROJECT STRUCTURE
+-----------------
+client/src/App.jsx
+  Main React app: page state, API calls, recipe browsing, account flows,
+  favorites, admin dashboard, recipe submission, and dialogs.
+
+client/src/App.css
+  Component and page styles, including responsive layouts and dialogs.
+
+client/src/index.css
+  Global fonts, colors, defaults, and shared browser styles.
+
+client/src/main.jsx
+  React application entry point.
+
+client/index.html
+  HTML document title, metadata, and root element.
+
+client/vite.config.js
+  Local Vite server configuration. The client runs on port 5174 and proxies
+  /api requests to the Express server on port 5001.
+
+server/index.js
+  Express app, API routes, authentication, recipe review, database startup,
+  and production serving of the built React client.
+
+server/Recipe.js
+  Recipe database schema.
+
+server/User.js
+  User accounts, password hashes, roles, and account status.
+
+server/AuthLog.js
+  Sign-up and sign-in activity records for the admin panel.
+
+server/Notification.js
+  In-app messages to recipe authors when their recipes are modified,
+  approved, rejected, or removed.
+
+server/NewsletterSubscriber.js
+  Stores email addresses submitted through the newsletter form. It saves
+  addresses in MongoDB; it does not send email.
+
+server/seedRecipes.js
+  Curated recipes inserted into MongoDB when the server connects.
+
+server/.env.example
+  Names and example values for the environment variables needed by the server.
+  Copy and customize this as server/.env for local development. The real .env
+  file is excluded from Git and must never be committed.
+
+render.yaml
+  Render Blueprint for building the client and server and serving them from
+  one public web service.
+
+MAIN USER FEATURES
+------------------
+Recipe discovery
+  - Browse curated and approved community recipes.
+  - Search recipe names, categories, tags, and ingredients.
+  - Filter by breakfast, lunch, dinner, or all recipes.
+  - Open a recipe for its description and ingredients.
+
+Favorites
+  - Click the heart on a recipe, then open Favorites in the navigation.
+  - Favorites are kept in this browser's localStorage. They are not synced
+    between browsers or devices.
+
+Accounts and submissions
+  - Sign up and sign in with an email and password.
+  - Submit a recipe and optional photo for admin review.
+  - Submitted recipes remain pending until an admin reviews them.
+  - Authors receive in-app notifications about review decisions and changes.
+
+Admin tools
+  - Review, edit, approve, or reject pending recipes.
+  - Edit or remove published recipes.
+  - View and block/unblock or remove user accounts.
+  - View sign-in activity.
+
+Newsletter list
+  - The newsletter form validates an email address and saves it in MongoDB.
+  - Duplicate addresses update/reuse the existing subscriber record.
+  - Newsletter emails are not sent. The form currently only saves addresses.
+
+DATABASE MODELS
+---------------
+User
+  Name, unique email, password hash, role (user/admin), and active status.
+
+Recipe
+  Name, category, preparation time, description, ingredients, image, tags,
+  source, status, submitter, and review information.
+
+AuthLog
+  Email, related user when available, event type, and event time.
+
+Notification
+  Recipe author, recipe, message type, message, read state, and timestamps.
+
+NewsletterSubscriber
+  Unique normalized email, active flag, and timestamps.
+
+LOCAL SETUP
+-----------
+Requirements: Node.js/npm and a running MongoDB instance.
+
+1. Copy server/.env.example to server/.env.
+2. Set MONGODB_URI to your local MongoDB database, normally:
+     mongodb://127.0.0.1:27017/savor
+3. Replace JWT_SECRET with a long random value.
+4. Set SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD for the initial admin.
+5. In one terminal:
+     cd server
+     npm install
+     npm run dev
+6. In another terminal:
+     cd client
+     npm install
+     npm run dev
+7. Open the Vite address printed in the client terminal. The default is:
+     http://localhost:5174
+
+The client Vite server proxies API calls to localhost:5001. For production,
+Express serves the built client and API from the same host.
+
+ENVIRONMENT VARIABLES
+---------------------
+PORT
+  Express port. Defaults to 5001 locally. The hosting platform supplies this
+  value in production.
+
+MONGODB_URI
+  MongoDB connection string. Use a hosted database such as MongoDB Atlas for
+  public hosting; localhost on your computer cannot be reached by Render.
+
+JWT_SECRET
+  Secret used to sign authentication tokens. Use a long random value.
+
+SUPERADMIN_EMAIL
+SUPERADMIN_PASSWORD
+  Credentials used to create/update the initial admin account at server start.
+  Set a strong production password in Render's secret environment settings.
+
+API ROUTES
+----------
+POST   /api/auth/signup                 Create an account
+POST   /api/auth/login                  Sign in
+GET    /api/auth/me                     Get the signed-in account
+GET    /api/recipes                     List approved recipes
+POST   /api/recipes                     Submit a recipe (login required)
+POST   /api/newsletter/subscribe        Save a newsletter email
+GET    /api/notifications               Get unread author notifications
+PATCH  /api/notifications/:id/read      Mark a notification read
+GET    /api/health                      Hosting health check
+
+Admin routes require an authenticated admin account:
+GET    /api/admin/users
+PATCH  /api/admin/users/:id/status
+DELETE /api/admin/users/:id
+GET    /api/admin/recipes/pending
+GET    /api/admin/recipes/published
+PATCH  /api/admin/recipes/:id
+PATCH  /api/admin/recipes/:id/review
+DELETE /api/admin/recipes/:id
+GET    /api/admin/logs
+
+NPM SCRIPTS
+-----------
+Client:
+  npm run dev       Start Vite development server
+  npm run build     Build static production assets in client/dist
+  npm run preview   Preview a production build locally
+  npm run lint      Run Oxlint
+
+Server:
+  npm run dev       Start Express with Nodemon
+  npm start         Start Express for production
+
+PUBLIC DEPLOYMENT
+-----------------
+The repository includes render.yaml. To deploy:
+
+1. Create a MongoDB Atlas cluster and database user.
+2. Allow the Render service to connect in Atlas network access settings.
+3. In Render, create a Blueprint and connect this GitHub repository.
+4. Enter MONGODB_URI, SUPERADMIN_EMAIL, and SUPERADMIN_PASSWORD when asked.
+   Render generates JWT_SECRET from render.yaml.
+5. Open the public onrender.com address shown after a successful deploy.
+
+The free Render web service may sleep after 15 minutes without traffic, so a
+first request after idle time can take longer. The curated recipes are seeded
+on connection. Existing local user accounts, community recipes, auth logs,
+notifications, and newsletter addresses are not automatically copied to a
+new hosted database.
+
+The client build is checked into Git ignore rules as generated output. Never
+commit server/.env, database credentials, API keys, or authentication secrets.
